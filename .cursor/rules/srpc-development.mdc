@@ -1,0 +1,316 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# SRPC Development Guide
+
+SRPC (Simple RPC) is the communication backbone of the stagewise platform, enabling seamless communication between the VSCode extension, web applications, and toolbar components.
+
+## Core Components
+
+### SRPC Package ([packages/srpc](mdc:packages/srpc))
+The main SRPC implementation providing:
+- RPC client/server functionality
+- Type-safe communication contracts
+- WebSocket and HTTP transport layers
+- Error handling and retry mechanisms
+
+### Contract Definitions ([packages/extension-toolbar-srpc-contract](mdc:packages/extension-toolbar-srpc-contract))
+Defines the communication contracts between:
+- VSCode extension and toolbar
+- Extension and web applications
+- Internal component communication
+
+## Basic Usage Patterns
+
+### Client Setup
+```typescript
+import { createSRPCClient } from '@stagewise/srpc'
+
+const client = createSRPCClient({
+  transport: 'websocket', // or 'http'
+  endpoint: 'ws://localhost:3000/srpc',
+  timeout: 5000,
+  retries: 3
+})
+
+// Type-safe method calls
+const result = await client.call('methodName', { param1: 'value' })
+```
+
+### Server Setup
+```typescript
+import { createSRPCServer } from '@stagewise/srpc'
+
+const server = createSRPCServer({
+  transport: 'websocket',
+  port: 3000,
+  path: '/srpc'
+})
+
+// Register method handlers
+server.registerMethod('methodName', async (params) => {
+  // Handle the request
+  return { success: true, data: 'response' }
+})
+
+await server.start()
+```
+
+## Contract Development
+
+### Defining Contracts
+Contracts ensure type safety across client/server boundaries:
+
+```typescript
+// In packages/extension-toolbar-srpc-contract/src/types.ts
+export interface ToolbarContract {
+  // Method definitions with input/output types
+  updateComponent: {
+    input: { componentId: string; props: Record<string, any> }
+    output: { success: boolean; error?: string }
+  }
+  
+  getComponentTree: {
+    input: { rootId?: string }
+    output: { tree: ComponentNode[] }
+  }
+}
+
+export interface ComponentNode {
+  id: string
+  type: string
+  props: Record<string, any>
+  children: ComponentNode[]
+}
+```
+
+### Using Contracts
+```typescript
+import { createTypedSRPCClient } from '@stagewise/srpc'
+import type { ToolbarContract } from '@stagewise/extension-toolbar-srpc-contract'
+
+const client = createTypedSRPCClient<ToolbarContract>({
+  endpoint: 'ws://localhost:3000/srpc'
+})
+
+// Fully typed method calls
+const result = await client.call('updateComponent', {
+  componentId: 'comp-123',
+  props: { visible: true }
+})
+// result is typed as { success: boolean; error?: string }
+```
+
+## Communication Patterns
+
+### VSCode Extension ↔ Web Application
+```typescript
+// In VSCode extension
+export class ExtensionSRPCServer {
+  private server: SRPCServer
+
+  constructor() {
+    this.server = createSRPCServer({
+      transport: 'http',
+      port: vscode.workspace.getConfiguration('stagewise').get('port')
+    })
+    
+    this.registerMethods()
+  }
+
+  private registerMethods() {
+    this.server.registerMethod('getWorkspaceInfo', async () => {
+      return {
+        rootPath: vscode.workspace.rootPath,
+        activeEditor: vscode.window.activeTextEditor?.document.fileName
+      }
+    })
+  }
+}
+
+// In web application
+const extensionClient = createSRPCClient({
+  endpoint: 'http://localhost:3001/srpc'
+})
+
+const workspaceInfo = await extensionClient.call('getWorkspaceInfo', {})
+```
+
+### Toolbar ↔ Host Application
+```typescript
+// In toolbar component
+const hostClient = createSRPCClient({
+  transport: 'postMessage', // For iframe communication
+  targetOrigin: '*'
+})
+
+// Request component updates
+await hostClient.call('highlightElement', { selector: '.my-component' })
+
+// In host application
+const toolbarServer = createSRPCServer({
+  transport: 'postMessage'
+})
+
+toolbarServer.registerMethod('highlightElement', async ({ selector }) => {
+  const element = document.querySelector(selector)
+  if (element) {
+    element.classList.add('stagewise-highlight')
+    return { success: true }
+  }
+  return { success: false, error: 'Element not found' }
+})
+```
+
+## Error Handling
+
+### Client-Side Error Handling
+```typescript
+try {
+  const result = await client.call('methodName', params)
+  // Handle success
+} catch (error) {
+  if (error instanceof SRPCTimeoutError) {
+    // Handle timeout
+  } else if (error instanceof SRPCConnectionError) {
+    // Handle connection issues
+  } else {
+    // Handle other errors
+  }
+}
+```
+
+### Server-Side Error Handling
+```typescript
+server.registerMethod('riskyMethod', async (params) => {
+  try {
+    const result = await performRiskyOperation(params)
+    return { success: true, data: result }
+  } catch (error) {
+    // Log error for debugging
+    console.error('Operation failed:', error)
+    
+    // Return structured error response
+    return { 
+      success: false, 
+      error: error.message,
+      code: 'OPERATION_FAILED'
+    }
+  }
+})
+```
+
+## Testing SRPC Communication
+
+### Unit Testing
+```typescript
+import { createMockSRPCClient, createMockSRPCServer } from '@stagewise/srpc/testing'
+
+describe('SRPC Communication', () => {
+  it('should handle method calls correctly', async () => {
+    const mockServer = createMockSRPCServer()
+    mockServer.mockMethod('testMethod', { success: true })
+    
+    const client = createMockSRPCClient(mockServer)
+    const result = await client.call('testMethod', { param: 'value' })
+    
+    expect(result).toEqual({ success: true })
+    expect(mockServer.getCallHistory('testMethod')).toHaveLength(1)
+  })
+})
+```
+
+### Integration Testing
+```typescript
+// Test real client/server communication
+describe('Real SRPC Integration', () => {
+  let server: SRPCServer
+  let client: SRPCClient
+
+  beforeAll(async () => {
+    server = createSRPCServer({ port: 0 }) // Use random port
+    await server.start()
+    
+    const port = server.getPort()
+    client = createSRPCClient({ endpoint: `http://localhost:${port}/srpc` })
+  })
+
+  afterAll(async () => {
+    await client.disconnect()
+    await server.stop()
+  })
+
+  it('should communicate successfully', async () => {
+    server.registerMethod('echo', async (data) => data)
+    
+    const result = await client.call('echo', { message: 'hello' })
+    expect(result).toEqual({ message: 'hello' })
+  })
+})
+```
+
+## Performance Considerations
+
+### Connection Pooling
+```typescript
+// Reuse connections for multiple calls
+const client = createSRPCClient({
+  endpoint: 'ws://localhost:3000/srpc',
+  keepAlive: true,
+  maxConnections: 5
+})
+```
+
+### Batching Requests
+```typescript
+// Batch multiple calls for efficiency
+const results = await client.batch([
+  { method: 'getUser', params: { id: 1 } },
+  { method: 'getUser', params: { id: 2 } },
+  { method: 'getSettings', params: {} }
+])
+```
+
+### Streaming for Large Data
+```typescript
+// Use streaming for large datasets
+const stream = client.stream('getLargeDataset', { query: 'complex' })
+
+stream.on('data', (chunk) => {
+  // Process data chunk
+})
+
+stream.on('end', () => {
+  // All data received
+})
+```
+
+## Debugging SRPC
+
+### Enable Debug Logging
+```typescript
+const client = createSRPCClient({
+  endpoint: 'ws://localhost:3000/srpc',
+  debug: true,
+  logger: console // Custom logger
+})
+```
+
+### VSCode Extension Integration
+When debugging the extension, SRPC communication can be monitored through:
+- VSCode Developer Console
+- Extension host logs
+- Network inspection tools
+
+## Best Practices
+
+1. **Type Safety**: Always use TypeScript contracts for method definitions
+2. **Error Handling**: Implement comprehensive error handling on both sides
+3. **Connection Management**: Properly manage connection lifecycle
+4. **Testing**: Write both unit and integration tests for SRPC methods
+5. **Documentation**: Document all RPC methods and their contracts
+6. **Versioning**: Version your contracts to handle API evolution
+7. **Security**: Validate all inputs and sanitize outputs
+8. **Performance**: Use batching and streaming for large operations

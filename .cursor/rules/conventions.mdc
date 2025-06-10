@@ -1,0 +1,88 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Coding Conventions
+
+## Package Management
+When using the terminal in Node.js apps, always use **pnpm** as the package manager.
+
+## Naming Conventions
+
+### Components
+- Use **kebab-case** for all component files and directories
+- Example: `user-profile.component.ts`, `modal-dialog/`
+
+### Files and Directories
+- **kebab-case** for all file and directory names
+- Example: `user-service.ts`, `auth-middleware.ts`
+
+### Variables and Functions
+- **camelCase** for variables, functions, and methods
+- Example: `getUserData()`, `isAuthenticated`
+
+### Types and Interfaces
+- **PascalCase** for TypeScript types, interfaces, and classes
+- Example: `UserProfile`, `ComponentProps`
+
+### Constants
+- **SCREAMING_SNAKE_CASE** for constants
+- Example: `API_BASE_URL`, `DEFAULT_TIMEOUT`
+
+## Code Style
+
+### TypeScript
+- Always use TypeScript for type safety
+- Define explicit return types for functions
+- Use strict TypeScript configuration
+- Prefer interfaces over types for object shapes
+
+### Import Organization
+```typescript
+// 1. Node modules
+import React from 'react'
+import { Router } from 'express'
+
+// 2. Internal packages (stagewise packages)
+import { createSRPCClient } from '@stagewise/srpc'
+import { Button } from '@stagewise/ui'
+
+// 3. Relative imports
+import { UserService } from '../services/user-service'
+import './component.styles.css'
+```
+
+### Error Handling
+- Always handle errors gracefully
+- Use structured error responses in SRPC methods
+- Log errors with context for debugging
+
+### Documentation
+- Use JSDoc comments for public APIs
+- Document complex logic and business rules
+- Keep README files updated for each package
+
+## Framework-Specific Conventions
+
+### React
+- Use functional components with hooks
+- Follow React naming conventions (PascalCase for components)
+- Use TypeScript interfaces for props
+
+### Vue
+- Use Composition API for better TypeScript support
+- Follow Vue naming conventions (kebab-case in templates)
+
+### Angular
+- Follow Angular style guide
+- Use dependency injection patterns
+- Use RxJS for reactive programming
+
+## Commit Message Format
+Follow conventional commits as defined in [precommit.mdc](mdc:.cursor/rules/precommit.mdc)
+
+## Testing
+- Co-locate test files with source files
+- Use descriptive test names
+- Follow testing guidelines in [testing-guidelines.mdc](mdc:.cursor/rules/testing-guidelines.mdc)

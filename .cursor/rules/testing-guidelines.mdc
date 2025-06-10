@@ -1,0 +1,416 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Testing Guidelines
+
+This guide outlines testing strategies and best practices for the stagewise project across different components and frameworks.
+
+## Testing Philosophy
+
+- **Test-Driven Development**: Write tests before implementing features when possible
+- **Multi-Layer Testing**: Unit tests, integration tests, and end-to-end tests
+- **Framework Agnostic**: Testing patterns that work across React, Vue, Angular, etc.
+- **Real-World Scenarios**: Tests should mirror actual usage patterns
+
+## Testing Stack
+
+### Core Testing Tools
+- **Unit Testing**: Jest, Vitest (per framework preference)
+- **Integration Testing**: Testing Library (React, Vue, Angular variants)
+- **E2E Testing**: Playwright or Cypress
+- **Mock Framework**: MSW (Mock Service Worker) for API mocking
+
+### Project-Specific Testing
+- **SRPC Testing**: Custom mocks for RPC communication
+- **VSCode Extension**: Extension Host testing environment
+- **Toolbar Testing**: Cross-frame communication testing
+
+## Unit Testing Patterns
+
+### Component Testing
+```typescript
+// React component test example
+import { render, screen } from '@testing-library/react'
+import { StageWiseProvider } from '@stagewise/react'
+import MyComponent from './MyComponent'
+
+describe('MyComponent', () => {
+  it('should render with stagewise integration', () => {
+    render(
+      <StageWiseProvider>
+        <MyComponent title="Test Component" />
+      </StageWiseProvider>
+    )
+    
+    expect(screen.getByText('Test Component')).toBeInTheDocument()
+  })
+  
+  it('should communicate with toolbar via SRPC', async () => {
+    const mockSRPCClient = createMockSRPCClient()
+    mockSRPCClient.mockMethod('updateComponent', { success: true })
+    
+    render(
+      <StageWiseProvider srpcClient={mockSRPCClient}>
+        <MyComponent />
+      </StageWiseProvider>
+    )
+    
+    // Trigger component update
+    await userEvent.click(screen.getByRole('button'))
+    
+    expect(mockSRPCClient.getCallHistory('updateComponent')).toHaveLength(1)
+  })
+})
+```
+
+### SRPC Testing
+```typescript
+// packages/srpc/tests/srpc-client.test.ts
+import { createSRPCClient, createMockSRPCServer } from '@stagewise/srpc'
+
+describe('SRPC Client', () => {
+  let mockServer: MockSRPCServer
+  let client: SRPCClient
+
+  beforeEach(() => {
+    mockServer = createMockSRPCServer()
+    client = createSRPCClient({
+      endpoint: mockServer.getEndpoint()
+    })
+  })
+
+  it('should handle successful method calls', async () => {
+    mockServer.mockMethod('testMethod', { result: 'success' })
+    
+    const response = await client.call('testMethod', { param: 'value' })
+    
+    expect(response).toEqual({ result: 'success' })
+    expect(mockServer.getLastCall('testMethod')).toEqual({ param: 'value' })
+  })
+
+  it('should handle connection errors gracefully', async () => {
+    mockServer.simulateConnectionError()
+    
+    await expect(client.call('testMethod', {})).rejects.toThrow('Connection failed')
+  })
+})
+```
+
+### Utility Function Testing
+```typescript
+// packages/ui/tests/utils.test.ts
+import { formatComponentId, parseComponentProps } from '../src/utils'
+
+describe('Component Utilities', () => {
+  describe('formatComponentId', () => {
+    it('should format component IDs correctly', () => {
+      expect(formatComponentId('MyComponent', 123)).toBe('MyComponent-123')
+      expect(formatComponentId('Button', 'primary')).toBe('Button-primary')
+    })
+  })
+
+  describe('parseComponentProps', () => {
+    it('should parse component props from string', () => {
+      const propsString = '{"visible": true, "count": 42}'
+      const result = parseComponentProps(propsString)
+      
+      expect(result).toEqual({ visible: true, count: 42 })
+    })
+  })
+})
+```
+
+## Integration Testing
+
+### Framework Integration
+```typescript
+// examples/react-example/tests/integration.test.tsx
+import { render, waitFor } from '@testing-library/react'
+import { createSRPCServer } from '@stagewise/srpc'
+import App from '../src/App'
+
+describe('React Integration', () => {
+  let srpcServer: SRPCServer
+
+  beforeAll(async () => {
+    srpcServer = createSRPCServer({ port: 0 })
+    await srpcServer.start()
+  })
+
+  afterAll(async () => {
+    await srpcServer.stop()
+  })
+
+  it('should establish SRPC connection on mount', async () => {
+    const connectionSpy = jest.fn()
+    srpcServer.on('connection', connectionSpy)
+
+    render(<App srpcEndpoint={srpcServer.getEndpoint()} />)
+
+    await waitFor(() => {
+      expect(connectionSpy).toHaveBeenCalled()
+    })
+  })
+})
+```
+
+### Toolbar Integration
+```typescript
+// toolbar/core/tests/toolbar-integration.test.ts
+describe('Toolbar Integration', () => {
+  it('should communicate with host application', async () => {
+    const hostWindow = createMockWindow()
+    const toolbar = new StageWiseToolbar({
+      hostWindow,
+      srpcEndpoint: 'mock://localhost'
+    })
+
+    await toolbar.initialize()
+
+    // Simulate host application interaction
+    await toolbar.highlightElement('.test-component')
+
+    expect(hostWindow.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'highlightElement',
+        params: { selector: '.test-component' }
+      }),
+      '*'
+    )
+  })
+})
+```
+
+## End-to-End Testing
+
+### VSCode Extension E2E
+```typescript
+// apps/vscode-extension/tests/e2e/extension.test.ts
+import * as vscode from 'vscode'
+import { activate } from '../../src/extension'
+
+suite('Extension E2E Tests', () => {
+  test('should activate and start HTTP server', async () => {
+    const context = createMockExtensionContext()
+    
+    await activate(context)
+    
+    // Verify extension is active
+    const extension = vscode.extensions.getExtension('stagewise.stagewise')
+    assert.ok(extension?.isActive)
+    
+    // Verify HTTP server is running
+    const response = await fetch('http://localhost:3001/health')
+    assert.strictEqual(response.status, 200)
+  })
+
+  test('should serve toolbar to web application', async () => {
+    // Open a workspace with a React project
+    await vscode.commands.executeCommand('vscode.openFolder', testProjectUri)
+    
+    // Start the development server
+    await vscode.commands.executeCommand('stagewise.startServer')
+    
+    // Verify toolbar is injected
+    const response = await fetch('http://localhost:3000')
+    const html = await response.text()
+    
+    assert.ok(html.includes('stagewise-toolbar'))
+  })
+})
+```
+
+### Cross-Framework E2E
+```typescript
+// tests/e2e/cross-framework.spec.ts
+import { test, expect } from '@playwright/test'
+
+test.describe('Cross-Framework Integration', () => {
+  const frameworks = ['react', 'vue', 'angular']
+
+  frameworks.forEach(framework => {
+    test(`should work with ${framework} example`, async ({ page }) => {
+      await page.goto(`http://localhost:3000/${framework}-example`)
+      
+      // Wait for stagewise toolbar to load
+      await page.waitForSelector('[data-testid="stagewise-toolbar"]')
+      
+      // Interact with component
+      await page.click('[data-testid="test-component"]')
+      
+      // Verify toolbar updates
+      await expect(page.locator('.toolbar-component-info')).toContainText('test-component')
+      
+      // Test live editing
+      await page.click('[data-testid="edit-props-button"]')
+      await page.fill('[data-testid="prop-input"]', 'new value')
+      
+      // Verify component updates
+      await expect(page.locator('[data-testid="test-component"]')).toContainText('new value')
+    })
+  })
+})
+```
+
+## Testing Configuration
+
+### Jest Configuration
+```javascript
+// jest.config.js
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'jsdom',
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  moduleNameMapping: {
+    '^@stagewise/(.*)$': '<rootDir>/packages/$1/src',
+    '^@/(.*)$': '<rootDir>/src/$1'
+  },
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/**/*.stories.{ts,tsx}'
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80
+    }
+  }
+}
+```
+
+### Test Setup
+```typescript
+// tests/setup.ts
+import '@testing-library/jest-dom'
+import { createMockSRPCClient } from '@stagewise/srpc/testing'
+
+// Global test utilities
+global.createMockSRPCClient = createMockSRPCClient
+
+// Mock window.postMessage for toolbar tests
+Object.defineProperty(window, 'postMessage', {
+  value: jest.fn(),
+  writable: true
+})
+
+// Mock VSCode API for extension tests
+if (typeof global.vscode === 'undefined') {
+  global.vscode = {
+    workspace: {
+      getConfiguration: jest.fn(() => ({
+        get: jest.fn()
+      }))
+    },
+    commands: {
+      registerCommand: jest.fn()
+    }
+  }
+}
+```
+
+## Testing Best Practices
+
+### 1. Test Organization
+```
+src/
+  components/
+    button/
+      button.component.ts
+      button.component.test.ts  # Co-located unit tests
+      button.integration.test.ts # Integration tests
+tests/
+  e2e/                         # End-to-end tests
+  fixtures/                    # Test data and utilities
+  mocks/                       # Shared mocks
+```
+
+### 2. Mock Management
+```typescript
+// tests/mocks/srpc.ts
+export const createSRPCMocks = () => ({
+  client: createMockSRPCClient(),
+  server: createMockSRPCServer(),
+  contracts: {
+    toolbar: mockToolbarContract,
+    extension: mockExtensionContract
+  }
+})
+```
+
+### 3. Test Data Management
+```typescript
+// tests/fixtures/components.ts
+export const testComponents = {
+  button: {
+    id: 'button-1',
+    type: 'Button',
+    props: { text: 'Click me', variant: 'primary' }
+  },
+  modal: {
+    id: 'modal-1',
+    type: 'Modal',
+    props: { isOpen: true, title: 'Test Modal' }
+  }
+}
+```
+
+### 4. Continuous Integration
+```yaml
+# .github/workflows/test.yml
+name: Test
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+      
+      - run: pnpm install
+      - run: pnpm test:unit
+      - run: pnpm test:integration
+      - run: pnpm test:e2e
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+```
+
+## Framework-Specific Testing
+
+### React Testing
+- Use React Testing Library for component tests
+- Test hooks with `@testing-library/react-hooks`
+- Mock React contexts for isolated testing
+
+### Vue Testing
+- Use Vue Test Utils for component tests
+- Test composables separately
+- Mock Vue plugins and directives
+
+### Angular Testing
+- Use Angular Testing Utilities
+- Test services with dependency injection
+- Mock HTTP requests with HttpClientTestingModule
+
+## Debugging Tests
+
+### VSCode Test Debugging
+1. Set breakpoints in test files
+2. Use "Debug Jest Tests" configuration
+3. Inspect SRPC communication in debug console
+
+### Browser Test Debugging
+1. Use `--headed` flag for Playwright
+2. Add `debugger` statements in test code
+3. Use browser dev tools for toolbar testing
+
+Remember to run tests frequently during development and maintain high test coverage across all components of the stagewise platform.

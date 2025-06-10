@@ -1,0 +1,162 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Framework Development Guide
+
+This guide covers development patterns and best practices for working with different frameworks in the stagewise ecosystem.
+
+## React Development
+
+### Examples and Integration
+- **Reference**: [examples/react-example](mdc:examples/react-example)
+- **Plugin**: [plugins/react](mdc:plugins/react)
+- **Toolbar Adapter**: [toolbar/react](mdc:toolbar/react)
+
+### Key Patterns
+- Use functional components with hooks
+- Leverage React's virtual DOM for efficient updates
+- Follow React naming conventions (PascalCase for components)
+- Use TypeScript interfaces for prop definitions
+
+### Integration Points
+```typescript
+// Example integration with stagewise toolbar
+import { StageWiseProvider } from '@stagewise/react'
+
+function App() {
+  return (
+    <StageWiseProvider>
+      <YourComponent />
+    </StageWiseProvider>
+  )
+}
+```
+
+## Vue.js Development
+
+### Examples and Integration
+- **Reference**: [examples/vue-example](mdc:examples/vue-example)
+- **Plugin**: [plugins/vue](mdc:plugins/vue)
+- **Toolbar Adapter**: [toolbar/vue](mdc:toolbar/vue)
+- **Nuxt Example**: [examples/nuxt-example](mdc:examples/nuxt-example)
+
+### Key Patterns
+- Use Composition API for better TypeScript support
+- Follow Vue's reactivity patterns
+- Use kebab-case for component names in templates
+- Leverage Vue's built-in directives effectively
+
+### Integration Points
+```typescript
+// Vue 3 Composition API integration
+import { createApp } from 'vue'
+import { stageWisePlugin } from '@stagewise/vue'
+
+const app = createApp(App)
+app.use(stageWisePlugin)
+```
+
+## Angular Development
+
+### Examples and Integration
+- **Reference**: [examples/angular-example](mdc:examples/angular-example)
+- **Plugin**: [plugins/angular](mdc:plugins/angular)
+
+### Key Patterns
+- Use Angular services for shared state
+- Follow Angular's dependency injection patterns
+- Use RxJS observables for async operations
+- Follow Angular naming conventions (kebab-case for selectors)
+
+### Integration Points
+```typescript
+// Angular module integration
+import { NgModule } from '@angular/core'
+import { StageWiseModule } from '@stagewise/angular'
+
+@NgModule({
+  imports: [StageWiseModule],
+  // ...
+})
+export class AppModule { }
+```
+
+## Next.js Development
+
+### Examples and Integration
+- **Reference**: [examples/next-example](mdc:examples/next-example)
+- **Pages Router**: [examples/next-pages-example](mdc:examples/next-pages-example)
+- **Toolbar Adapter**: [toolbar/next](mdc:toolbar/next)
+
+### Key Patterns
+- Use Next.js App Router for new projects
+- Leverage Server Components where appropriate
+- Follow Next.js file-based routing conventions
+- Use TypeScript for better development experience
+
+### SSR Considerations
+```typescript
+// Client-only component wrapper for stagewise
+'use client'
+import dynamic from 'next/dynamic'
+
+const StageWiseToolbar = dynamic(
+  () => import('@stagewise/next'),
+  { ssr: false }
+)
+```
+
+## SvelteKit Development
+
+### Examples and Integration
+- **Reference**: [examples/svelte-kit-example](mdc:examples/svelte-kit-example)
+
+### Key Patterns
+- Use Svelte stores for state management
+- Follow SvelteKit's file-based routing
+- Leverage Svelte's reactive statements
+- Use TypeScript with SvelteKit
+
+## Common Development Practices
+
+### Component Naming Convention
+- Use **kebab-case** for all component files and selectors
+- Example: `user-profile.component.ts`, `<user-profile></user-profile>`
+
+### TypeScript Usage
+- Always use TypeScript for better development experience
+- Define proper interfaces for props/data structures
+- Use strict TypeScript configuration
+
+### SRPC Integration
+All frameworks can communicate with the VSCode extension through SRPC:
+
+```typescript
+import { createSRPCClient } from '@stagewise/srpc'
+
+const client = createSRPCClient({
+  // configuration
+})
+
+// Use client for communication with extension
+```
+
+### Testing Patterns
+- Use framework-specific testing tools (Jest, Vitest, etc.)
+- Write unit tests for components and utilities
+- Integration tests for SRPC communication
+- E2E tests for complete workflows
+
+## Plugin Development
+
+When creating new framework plugins, use [plugins/template](mdc:plugins/template) as a starting point:
+
+1. Copy template structure
+2. Implement framework-specific integration
+3. Add TypeScript definitions
+4. Create example usage
+5. Update documentation
+
+Refer to [plugin-creation-guide.mdc](mdc:.cursor/rules/plugin-creation-guide.mdc) for detailed plugin development instructions.

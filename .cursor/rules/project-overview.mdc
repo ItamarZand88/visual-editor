@@ -1,0 +1,73 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Stagewise Project Overview
+
+Stagewise is a development platform that provides visual debugging and live editing capabilities for web applications. The project consists of multiple components working together to deliver a seamless development experience.
+
+## Core Components
+
+### VSCode Extension ([apps/vscode-extension](mdc:apps/vscode-extension))
+The main development tool that integrates with VS Code to provide:
+- Live preview capabilities
+- HTTP server for serving applications
+- MCP (Model Context Protocol) integration
+- WebView components for UI interactions
+
+Key files:
+- [apps/vscode-extension/src/activation](mdc:apps/vscode-extension/src/activation): Extension activation logic
+- [apps/vscode-extension/src/http-server](mdc:apps/vscode-extension/src/http-server): Local development server
+- [apps/vscode-extension/src/webviews](mdc:apps/vscode-extension/src/webviews): UI components
+
+### SRPC Communication ([packages/srpc](mdc:packages/srpc))
+A custom RPC (Remote Procedure Call) system enabling communication between:
+- VSCode extension and web applications
+- Toolbar and host applications
+- Plugin systems
+
+Contract definitions: [packages/extension-toolbar-srpc-contract](mdc:packages/extension-toolbar-srpc-contract)
+
+### Toolbar System ([toolbar/](mdc:toolbar))
+Visual debugging interface that overlays on web applications:
+- **Core**: [toolbar/core](mdc:toolbar/core) - Base toolbar functionality
+- **Framework Adapters**: [toolbar/next](mdc:toolbar/next), [toolbar/react](mdc:toolbar/react), [toolbar/vue](mdc:toolbar/vue)
+
+### Framework Plugins ([plugins/](mdc:plugins))
+Framework-specific integrations:
+- [plugins/react](mdc:plugins/react): React framework support
+- [plugins/angular](mdc:plugins/angular): Angular framework support  
+- [plugins/vue](mdc:plugins/vue): Vue framework support
+- [plugins/template](mdc:plugins/template): Plugin template for new frameworks
+
+### Examples ([examples/](mdc:examples))
+Reference implementations showing integration patterns:
+- [examples/react-example](mdc:examples/react-example): React app with stagewise
+- [examples/next-example](mdc:examples/next-example): Next.js integration
+- [examples/angular-example](mdc:examples/angular-example): Angular implementation
+- [examples/vue-example](mdc:examples/vue-example): Vue.js integration
+- [examples/nuxt-example](mdc:examples/nuxt-example): Nuxt.js example
+- [examples/svelte-kit-example](mdc:examples/svelte-kit-example): SvelteKit integration
+
+## Architecture Principles
+
+1. **Framework Agnostic**: Core functionality works across React, Vue, Angular, and other frameworks
+2. **Plugin-Based**: Extensible through framework-specific plugins
+3. **Communication Layer**: SRPC enables seamless communication between components
+4. **Development-Focused**: Optimized for developer experience and productivity
+
+## Development Workflow
+
+1. Start with examples to understand integration patterns
+2. Use toolbar system for live debugging and editing
+3. Extend functionality through plugins
+4. Leverage SRPC for custom communication needs
+
+## Key Technologies
+
+- **TypeScript**: Primary language across all components
+- **PNPM**: Package management and workspace orchestration
+- **Biome**: Code formatting and linting ([biome.jsonc](mdc:biome.jsonc))
+- **Turbo**: Build system orchestration ([turbo.json](mdc:turbo.json))
+

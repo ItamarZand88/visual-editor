@@ -1,0 +1,345 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Development Workflow
+
+This guide outlines the recommended development workflow for contributing to the stagewise project.
+
+## Getting Started
+
+### Prerequisites
+- Node.js 18+ and pnpm
+- VSCode with recommended extensions
+- Git configured with conventional commits
+
+### Initial Setup
+```bash
+# Clone and install dependencies
+git clone <repository-url>
+cd stagewise
+pnpm install
+
+# Build all packages
+pnpm build
+
+# Run tests to verify setup
+pnpm test
+```
+
+## Development Environment
+
+### VSCode Extension Development
+1. **Start the Extension Host**:
+   ```bash
+   cd apps/vscode-extension
+   pnpm dev
+   ```
+
+2. **Test Extension**:
+   - Press `F5` to open Extension Development Host
+   - Open a test project in the new window
+   - Verify extension functionality
+
+3. **Debug Extension**:
+   - Set breakpoints in TypeScript code
+   - Use VSCode debugger with extension host
+   - Check Developer Console for logs
+
+### Web Application Development
+
+#### Working with Examples
+```bash
+# Start React example
+cd examples/react-example
+pnpm dev
+
+# Start Vue example  
+cd examples/vue-example
+pnpm dev
+
+# Start Angular example
+cd examples/angular-example
+pnpm start
+```
+
+#### Framework Plugin Development
+```bash
+# Develop React plugin
+cd plugins/react
+pnpm dev
+
+# Test plugin with example
+cd examples/react-example
+pnpm link @stagewise/react
+pnpm dev
+```
+
+### Toolbar Development
+```bash
+# Start toolbar core development
+cd toolbar/core
+pnpm dev
+
+# Start framework-specific toolbar
+cd toolbar/react
+pnpm dev
+```
+
+## Package Development
+
+### SRPC Development
+```bash
+cd packages/srpc
+
+# Run tests in watch mode
+pnpm test:watch
+
+# Build and test
+pnpm build
+pnpm test
+
+# Test examples
+cd ../../examples/react-example
+pnpm test:srpc
+```
+
+### UI Components
+```bash
+cd packages/ui
+
+# Start Storybook for development
+pnpm storybook
+
+# Build components
+pnpm build
+
+# Test components
+pnpm test
+```
+
+## Testing Workflow
+
+### Running Tests
+```bash
+# Run all tests
+pnpm test
+
+# Run specific package tests
+pnpm --filter @stagewise/srpc test
+
+# Run tests in watch mode
+pnpm test:watch
+
+# Run E2E tests
+pnpm test:e2e
+```
+
+### Test Development
+1. Write unit tests alongside new features
+2. Add integration tests for cross-component functionality
+3. Update E2E tests for major workflow changes
+4. Maintain test coverage above 80%
+
+## Build and Release
+
+### Building Packages
+```bash
+# Build all packages
+pnpm build
+
+# Build specific package
+pnpm --filter @stagewise/srpc build
+
+# Build with dependencies
+pnpm --filter @stagewise/ui... build
+```
+
+### Version Management
+```bash
+# Create changeset for versioning
+pnpm changeset
+
+# Apply version changes
+pnpm changeset version
+
+# Publish packages
+pnpm changeset publish
+```
+
+## Git Workflow
+
+### Branch Strategy
+- **main**: Production-ready code
+- **develop**: Integration branch for features
+- **feature/**: Feature development branches
+- **hotfix/**: Critical bug fixes
+
+### Commit Workflow
+1. **Create Feature Branch**:
+   ```bash
+   git checkout -b feature/component-highlighting
+   ```
+
+2. **Make Changes and Commit**:
+   ```bash
+   git add .
+   git commit -m "feat(toolbar): add component highlighting functionality"
+   ```
+
+3. **Push and Create PR**:
+   ```bash
+   git push origin feature/component-highlighting
+   # Create pull request via GitHub
+   ```
+
+### Commit Message Format
+Follow [conventional commits](mdc:.cursor/rules/precommit.mdc):
+```
+type(scope): description
+
+feat(toolbar): add component selection
+fix(srpc): handle connection timeouts
+docs(readme): update installation guide
+test(react): add component integration tests
+```
+
+## Code Review Process
+
+### Before Creating PR
+- [ ] All tests pass locally
+- [ ] Code follows conventions in [conventions.mdc](mdc:.cursor/rules/conventions.mdc)
+- [ ] Documentation updated if needed
+- [ ] Changeset created for version tracking
+
+### PR Requirements
+- [ ] Descriptive title and description
+- [ ] Link to related issues
+- [ ] Screenshots/videos for UI changes
+- [ ] Reviewer assigned
+- [ ] CI checks passing
+
+### Review Checklist
+- [ ] Code quality and conventions
+- [ ] Test coverage adequate
+- [ ] Documentation complete
+- [ ] No breaking changes (or properly flagged)
+- [ ] Performance considerations addressed
+
+## Debugging Techniques
+
+### VSCode Extension Debugging
+1. **Extension Host Logs**:
+   - Check "Output" panel → "Log (Extension Host)"
+   - Use `console.log()` in extension code
+
+2. **HTTP Server Debugging**:
+   - Monitor network requests in browser dev tools
+   - Check server logs in terminal
+
+3. **SRPC Communication**:
+   - Enable debug mode in SRPC client/server
+   - Use browser network tab for WebSocket inspection
+
+### Web Application Debugging
+1. **Toolbar Integration**:
+   - Check iframe communication in dev tools
+   - Verify postMessage events
+   - Inspect toolbar DOM elements
+
+2. **Component Integration**:
+   - Use React/Vue dev tools
+   - Check component props and state
+   - Verify SRPC method calls
+
+### Common Issues
+
+#### Extension Not Loading
+- Check extension manifest syntax
+- Verify activation events
+- Review extension host logs
+
+#### SRPC Connection Failures
+- Verify server is running on correct port
+- Check firewall/proxy settings
+- Validate SRPC contract definitions
+
+#### Toolbar Not Appearing
+- Check iframe injection
+- Verify host application integration
+- Review CSS z-index conflicts
+
+## Performance Optimization
+
+### Bundle Size
+- Use dynamic imports for large dependencies
+- Implement code splitting in examples
+- Monitor bundle size in CI
+
+### Runtime Performance
+- Profile toolbar rendering performance
+- Optimize SRPC call frequency
+- Use React.memo/Vue computed for expensive operations
+
+### Development Experience
+- Use watch mode for fast rebuilds
+- Enable hot module replacement where possible
+- Optimize test run times
+
+## Documentation Workflow
+
+### Code Documentation
+- Write JSDoc comments for public APIs
+- Update TypeScript types and interfaces
+- Maintain inline code comments for complex logic
+
+### Guide Updates
+- Update relevant guides when changing workflows
+- Keep examples synchronized with latest APIs
+- Review and update cursor rules regularly
+
+### External Documentation
+- Update README files for changed packages
+- Maintain changelog for releases
+- Update website documentation if applicable
+
+## Continuous Integration
+
+### GitHub Actions
+- Tests run automatically on PRs
+- Build verification for all packages
+- E2E tests on multiple environments
+
+### Quality Gates
+- Test coverage requirements
+- Linting and formatting checks
+- Bundle size analysis
+- Security vulnerability scanning
+
+## Local Development Tips
+
+### Performance
+```bash
+# Use turbo for faster builds
+pnpm turbo dev
+
+# Run only affected packages
+pnpm turbo test --filter=...[HEAD^]
+```
+
+### Debugging
+```bash
+# Enable verbose logging
+DEBUG=stagewise:* pnpm dev
+
+# Run specific test suites
+pnpm test --testNamePattern="SRPC"
+```
+
+### Productivity
+- Use VSCode workspace settings for consistent formatting
+- Set up keyboard shortcuts for common commands
+- Use pnpm scripts for repetitive tasks
+
+Remember to follow the established conventions and communicate with the team when making significant changes to the development workflow.

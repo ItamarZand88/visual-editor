@@ -1,0 +1,305 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Visual Editor Feature Development Plan
+
+This document outlines the complete development plan for implementing visual editing capabilities in the stagewise platform. Each phase includes detailed steps, validation requirements, and checkboxes for progress tracking.
+
+## 🎯 Project Overview
+
+**Goal**: Enable visual editing of UI elements directly in the browser with real-time source code synchronization.
+
+**Key Features**:
+- Visual element selection and editing
+- Live style preview
+- Automatic source code updates
+- Figma-style sidebar interface
+- Support for React, Vue, Angular frameworks
+
+---
+
+## 📋 Development Phases
+
+### Phase 1: SRPC Contract Extension
+**Duration**: ~30 minutes  
+**Goal**: Extend communication contract between toolbar and VSCode extension
+
+#### Tasks:
+- [ ] Add new methods to [packages/extension-toolbar-srpc-contract/src/contract.ts](mdc:packages/extension-toolbar-srpc-contract/src/contract.ts)
+  - [ ] `updateElementStyles` method
+  - [ ] `getElementSourceInfo` method
+  - [ ] `validateStyleChanges` method
+- [ ] Update TypeScript types and exports
+- [ ] Build and test contract changes
+
+#### Validation Steps:
+- [ ] Run `pnpm build` in extension-toolbar-srpc-contract package
+- [ ] Verify no TypeScript errors
+- [ ] Test import in both toolbar and extension projects
+- [ ] Confirm SRPC client/server can use new methods
+
+---
+
+### Phase 2: Visual Editor Plugin Framework
+**Duration**: ~2 hours  
+**Goal**: Create the foundational plugin structure
+
+#### Tasks:
+- [ ] Create new plugin directory: `plugins/visual-editor/`
+- [ ] Set up plugin configuration files:
+  - [ ] `package.json`
+  - [ ] `tsconfig.json` 
+  - [ ] `vite.config.ts`
+- [ ] Create basic plugin structure:
+  - [ ] `src/index.tsx` - Main plugin export
+  - [ ] `src/visual-editor-plugin.tsx` - Plugin implementation
+  - [ ] `src/types.ts` - TypeScript interfaces
+- [ ] Implement basic ToolbarPlugin interface
+
+#### Validation Steps:
+- [ ] Plugin builds without errors: `pnpm build`
+- [ ] Plugin can be imported in React example
+- [ ] Plugin appears in toolbar when added to config
+- [ ] No console errors when plugin loads
+
+---
+
+### Phase 3: Element Selection Enhancement
+**Duration**: ~1 hour  
+**Goal**: Enhance existing element selection for visual editing mode
+
+#### Tasks:
+- [ ] Extend [toolbar/core/src/components/dom-context/element-selector.tsx](mdc:toolbar/core/src/components/dom-context/element-selector.tsx)
+- [ ] Add visual editing mode support
+- [ ] Enhance element highlighting with style indicators
+- [ ] Add element metadata extraction (component name, source file hints)
+- [ ] Integrate with existing React plugin detection
+
+#### Validation Steps:
+- [ ] Element selection works in visual editing mode
+- [ ] Selected elements show enhanced highlighting
+- [ ] Component information is correctly detected
+- [ ] No interference with existing prompting mode
+- [ ] Test across React, Vue, Angular examples
+
+---
+
+### Phase 4: Visual Editor Sidebar UI
+**Duration**: ~3 hours  
+**Goal**: Create the main visual editing interface
+
+#### Tasks:
+- [ ] Create sidebar components in `toolbar/core/src/components/visual-editor/`:
+  - [ ] `visual-editor-sidebar.tsx` - Main sidebar container
+  - [ ] `element-inspector.tsx` - Selected element info
+  - [ ] `style-panels/` directory with:
+    - [ ] `typography-panel.tsx`
+    - [ ] `colors-panel.tsx`
+    - [ ] `spacing-panel.tsx`
+    - [ ] `borders-panel.tsx`
+    - [ ] `layout-panel.tsx`
+- [ ] Implement style controls (sliders, color pickers, inputs)
+- [ ] Add live preview functionality
+- [ ] Create Apply/Reset buttons
+
+#### Validation Steps:
+- [ ] Sidebar renders without errors
+- [ ] All style panels display correctly
+- [ ] Style controls update element styles in real-time
+- [ ] Apply button triggers style sync (mock for now)
+- [ ] Reset button restores original styles
+- [ ] Responsive design works on different screen sizes
+
+---
+
+### Phase 5: Source Code Detection Engine
+**Duration**: ~4 hours  
+**Goal**: Implement intelligent source file and component detection
+
+#### Tasks:
+- [ ] Create source detection module: `apps/vscode-extension/src/code-sync/`
+  - [ ] `source-detector.ts` - Main detection logic
+  - [ ] `react-detector.ts` - React-specific detection
+  - [ ] `vue-detector.ts` - Vue-specific detection
+  - [ ] `angular-detector.ts` - Angular-specific detection
+- [ ] Implement detection strategies:
+  - [ ] Source map analysis
+  - [ ] React Fiber tree traversal
+  - [ ] Component name matching
+  - [ ] File path resolution
+- [ ] Add workspace file scanning
+- [ ] Create component-to-file mapping
+
+#### Validation Steps:
+- [ ] Detection works for React components
+- [ ] Can identify correct source files
+- [ ] Component name detection is accurate
+- [ ] Works with nested component hierarchies
+- [ ] Performance is acceptable (< 100ms detection time)
+- [ ] Test with different project structures
+
+---
+
+### Phase 6: Style Update Engine
+**Duration**: ~3 hours  
+**Goal**: Implement AST parsing and code modification
+
+#### Tasks:
+- [ ] Create style update module in `apps/vscode-extension/src/code-sync/`:
+  - [ ] `style-updater.ts` - Main update orchestrator
+  - [ ] `jsx-updater.ts` - JSX inline style updates
+  - [ ] `css-updater.ts` - CSS file updates
+  - [ ] `ast-parser.ts` - TypeScript/JSX AST manipulation
+- [ ] Implement update strategies:
+  - [ ] Inline style prop updates
+  - [ ] CSS class generation
+  - [ ] Style object updates
+- [ ] Add backup and rollback functionality
+- [ ] Implement change validation
+
+#### Validation Steps:
+- [ ] Can update inline styles in JSX files
+- [ ] Updates preserve existing code formatting
+- [ ] No syntax errors after updates
+- [ ] Backup files are created
+- [ ] Rollback functionality works
+- [ ] Changes are properly validated before applying
+
+---
+
+### Phase 7: VSCode Extension Handler
+**Duration**: ~2 hours  
+**Goal**: Create HTTP endpoints for visual editor communication
+
+#### Tasks:
+- [ ] Create new handler: `apps/vscode-extension/src/http-server/handlers/visual-editor.ts`
+- [ ] Implement endpoints:
+  - [ ] `POST /visual-editor/update-styles` - Apply style changes
+  - [ ] `GET /visual-editor/element-info` - Get element source info
+  - [ ] `POST /visual-editor/validate-changes` - Validate before applying
+- [ ] Update [apps/vscode-extension/src/http-server/server.ts](mdc:apps/vscode-extension/src/http-server/server.ts) with new routes
+- [ ] Add proper error handling and validation
+- [ ] Implement progress updates via SRPC
+
+#### Validation Steps:
+- [ ] All endpoints respond correctly
+- [ ] SRPC communication works end-to-end
+- [ ] Error handling is robust
+- [ ] Progress updates are sent properly
+- [ ] File operations work correctly
+- [ ] Test with malformed requests
+
+---
+
+### Phase 8: Integration and Testing
+**Duration**: ~2 hours  
+**Goal**: Complete integration and comprehensive testing
+
+#### Tasks:
+- [ ] Update example applications:
+  - [ ] [examples/react-example/src/main.tsx](mdc:examples/react-example/src/main.tsx)
+  - [ ] [examples/vue-example](mdc:examples/vue-example)
+  - [ ] [examples/angular-example](mdc:examples/angular-example)
+- [ ] Add visual editor plugin to toolbar configs
+- [ ] Create integration tests:
+  - [ ] Element selection workflow
+  - [ ] Style modification workflow
+  - [ ] Source code update workflow
+  - [ ] Error scenarios
+- [ ] Performance testing and optimization
+
+#### Validation Steps:
+- [ ] Full workflow works in React example
+- [ ] Full workflow works in Vue example
+- [ ] Full workflow works in Angular example
+- [ ] Performance is acceptable (< 500ms for updates)
+- [ ] No memory leaks in long sessions
+- [ ] Error recovery works properly
+
+---
+
+### Phase 9: Advanced Features (Optional)
+**Duration**: ~4 hours  
+**Goal**: Add advanced styling support and polish
+
+#### Tasks:
+- [ ] Add Tailwind CSS support:
+  - [ ] Tailwind class detection
+  - [ ] Class replacement logic
+  - [ ] Config file parsing
+- [ ] Add styled-components support:
+  - [ ] Template literal parsing
+  - [ ] Style interpolation
+- [ ] Add responsive design controls
+- [ ] Add component variant support
+- [ ] Polish UI/UX
+
+#### Validation Steps:
+- [ ] Tailwind CSS updates work correctly
+- [ ] Styled-components updates preserve functionality
+- [ ] Responsive controls work as expected
+- [ ] UI is polished and intuitive
+- [ ] No performance regressions
+
+---
+
+## 🧪 Testing Strategy
+
+### Unit Tests
+- [ ] SRPC contract methods
+- [ ] Source detection algorithms
+- [ ] AST parsing and modification
+- [ ] Style update logic
+
+### Integration Tests
+- [ ] End-to-end workflow testing
+- [ ] Cross-framework compatibility
+- [ ] Error handling scenarios
+- [ ] Performance benchmarks
+
+### Manual Testing
+- [ ] User experience testing
+- [ ] Edge case validation
+- [ ] Browser compatibility
+- [ ] Accessibility testing
+
+---
+
+## 📝 Documentation Tasks
+
+- [ ] Update [project-overview.mdc](mdc:.cursor/rules/project-overview.mdc) with visual editor features
+- [ ] Create visual editor user guide
+- [ ] Add API documentation for new SRPC methods
+- [ ] Update plugin development guide
+- [ ] Create troubleshooting guide
+
+---
+
+## 🚀 Deployment Checklist
+
+- [ ] All tests passing
+- [ ] Documentation complete
+- [ ] Examples updated
+- [ ] Performance benchmarks met
+- [ ] Security review completed
+- [ ] Accessibility compliance verified
+- [ ] Browser compatibility tested
+
+---
+
+## 📊 Success Metrics
+
+- [ ] Visual editing workflow completes in < 10 seconds
+- [ ] Source code updates are 100% accurate
+- [ ] No data loss or corruption during updates
+- [ ] UI is intuitive for first-time users
+- [ ] Performance impact is < 5% on host applications
+
+---
+
+**Total Estimated Time**: ~20 hours  
+**MVP Features**: Element selection, basic styling, React support  
+**Advanced Features**: Multi-framework support, advanced CSS features
+
