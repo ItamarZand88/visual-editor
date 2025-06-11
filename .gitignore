@@ -40,3 +40,4 @@ yarn-error.log*
 
 # VSCode
 .vscode-test
+.early.coverage

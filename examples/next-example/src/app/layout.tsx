@@ -3,6 +3,7 @@ import { StagewiseToolbar } from '@stagewise/toolbar-next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { ReactPlugin } from '@stagewise-plugins/react';
+import { VisualEditorPlugin } from '@stagewise-plugins/visual-editor';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -31,7 +32,7 @@ export default function RootLayout({
       >
         <StagewiseToolbar
           config={{
-            plugins: [ReactPlugin],
+            plugins: [ReactPlugin, VisualEditorPlugin],
           }}
         />
         {children}

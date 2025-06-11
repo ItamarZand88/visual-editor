@@ -152,6 +152,9 @@ export interface UIHandle {
 
 import type { PromptRequest } from '@stagewise/extension-toolbar-srpc-contract';
 import type { VNode } from 'preact';
+
+// Export DOM context components for external use
+export * from './components/dom-context';
 export interface ToolbarContext {
   sendPrompt: (prompt: string | PromptRequest) => void;
 }
