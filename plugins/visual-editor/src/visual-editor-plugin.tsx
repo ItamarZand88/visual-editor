@@ -4,7 +4,7 @@ import type { VisualEditorState, VisualElementData } from './types';
 import { VisualEditorIcon } from './visual-editor-icon';
 import { VisualEditorPanel } from './visual-editor-panel';
 
-// Plugin state
+// Plugin state - using a more minimal approach
 let visualEditorState: VisualEditorState = {
   selectedElement: null,
   isActive: false,
@@ -16,6 +16,7 @@ let visualEditorState: VisualEditorState = {
 // State management functions
 function updateState(updates: Partial<VisualEditorState>) {
   visualEditorState = { ...visualEditorState, ...updates };
+  console.log('Visual Editor State Updated:', visualEditorState);
 }
 
 function setSelectedElement(element: HTMLElement | null): void {
@@ -105,30 +106,6 @@ function generateCSSSelector(element: HTMLElement): string {
   return path.join(' > ');
 }
 
-function handleElementHover(element: HTMLElement): ContextElementContext {
-  // Only highlight if visual editor is active
-  if (visualEditorState.isActive) {
-    highlightHoverElement(element);
-    return {
-      annotation: 'Visual Editor: Click to select for editing',
-    };
-  }
-
-  return { annotation: null };
-}
-
-function handleElementSelect(element: HTMLElement): ContextElementContext {
-  if (visualEditorState.isActive) {
-    setSelectedElement(element);
-    console.log('Visual Editor: Element selected', element);
-    return {
-      annotation: 'Visual Editor: Element selected for editing',
-    };
-  }
-
-  return { annotation: null };
-}
-
 function highlightHoverElement(element: HTMLElement): void {
   // Remove existing hover highlights
   document.querySelectorAll('.visual-editor-hover').forEach((el) => {
@@ -156,25 +133,6 @@ function removeSelectedHighlight(): void {
     .forEach((el) => {
       el.classList.remove('visual-editor-selected', 'visual-editor-hover');
     });
-}
-
-function toggleVisualEditor(): void {
-  const newActiveState = !visualEditorState.isActive;
-
-  updateState({
-    isActive: newActiveState,
-    selectedElement: newActiveState ? visualEditorState.selectedElement : null,
-  });
-
-  if (newActiveState) {
-    // Add visual editor styles
-    addVisualEditorStyles();
-    console.log('Visual Editor activated');
-  } else {
-    // Remove visual editor styles and highlights
-    removeVisualEditorStyles();
-    console.log('Visual Editor deactivated');
-  }
 }
 
 function addVisualEditorStyles(): void {
@@ -222,18 +180,6 @@ function removeVisualEditorStyles(): void {
   removeSelectedHighlight();
 }
 
-function activateVisualEditor(): void {
-  updateState({ isActive: true });
-  addVisualEditorStyles();
-  console.log('Visual Editor activated');
-}
-
-function deactivateVisualEditor(): void {
-  updateState({ isActive: false, selectedElement: null });
-  removeVisualEditorStyles();
-  console.log('Visual Editor deactivated');
-}
-
 export const VisualEditorPlugin: ToolbarPlugin = {
   displayName: 'Visual Editor',
   description:
@@ -242,17 +188,32 @@ export const VisualEditorPlugin: ToolbarPlugin = {
   pluginName: 'visual-editor',
 
   onActionClick: () => {
-    // Toggle visual editor state
-    if (!visualEditorState.isActive) {
-      activateVisualEditor();
+    console.log('Visual Editor button clicked!');
+    
+    // Toggle active state
+    const newActiveState = !visualEditorState.isActive;
+    updateState({ 
+      isActive: newActiveState,
+      panelOpen: true 
+    });
+    
+    if (newActiveState) {
+      addVisualEditorStyles();
+    } else {
+      removeVisualEditorStyles();
     }
 
-    // Always return the panel when called (the toolbar will manage showing/hiding)
+    // Return the panel component - it will manage its own state
     return (
       <VisualEditorPanel
         state={visualEditorState}
         onClose={() => {
-          deactivateVisualEditor();
+          updateState({ 
+            isActive: false, 
+            selectedElement: null,
+            panelOpen: false 
+          });
+          removeVisualEditorStyles();
         }}
         onStateUpdate={updateState}
       />
@@ -260,9 +221,35 @@ export const VisualEditorPlugin: ToolbarPlugin = {
   },
 
   onLoad: (toolbar) => {
-    console.log('Visual Editor Plugin loaded');
+    console.log('Visual Editor Plugin loaded successfully!');
+    // Initialize styles on load
+    addVisualEditorStyles();
   },
 
-  onContextElementHover: handleElementHover,
-  onContextElementSelect: handleElementSelect,
+  // Always respond to hover events to provide visual feedback
+  onContextElementHover: (element: HTMLElement) => {
+    // If visual editor is active, show our hover styles
+    if (visualEditorState.isActive) {
+      highlightHoverElement(element);
+      return {
+        annotation: 'Visual Editor: Click to select for editing',
+      };
+    }
+    
+    return { annotation: null };
+  },
+
+  // Always respond to select events
+  onContextElementSelect: (element: HTMLElement) => {
+    // If visual editor is active, handle selection
+    if (visualEditorState.isActive) {
+      setSelectedElement(element);
+      console.log('Visual Editor: Element selected', element);
+      return {
+        annotation: 'Visual Editor: Element selected for editing',
+      };
+    }
+    
+    return { annotation: null };
+  },
 };
