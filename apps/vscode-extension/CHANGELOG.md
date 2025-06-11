@@ -1,5 +1,18 @@
 # stagewise-vscode-extension
 
+## 0.5.0
+
+### Minor Changes
+
+- 9b913d2: Add a getting started onboarding flow
+
+### Patch Changes
+
+- 9b913d2: Adding a window-select-hint when multiple windows are selected
+- 9b913d2: Add information about extension and toolbar version to telemetry
+- Updated dependencies [9b913d2]
+  - @stagewise/extension-toolbar-srpc-contract@0.1.2
+
 ## 0.4.4
 
 ### Patch Changes

@@ -12,16 +12,15 @@ export function VisualEditorPanel({
   onClose,
   onStateUpdate,
 }: VisualEditorPanelProps) {
-  
   // Simple element selector without useEffect since we don't have preact/hooks
   const setupElementHandlers = () => {
     if (!state.isActive) return;
 
     console.log('Visual Editor Panel: Setting up click handler');
-    
+
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      
+
       // Don't select elements inside the panel or toolbar
       if (
         target.closest('.companion') ||
@@ -79,11 +78,13 @@ export function VisualEditorPanel({
       console.log('Visual Editor Panel: Cleaning up event handlers');
       document.removeEventListener('click', handleClick, true);
       document.removeEventListener('mousemove', handleMouseMove, true);
-      
+
       // Clean up any remaining highlights
-      document.querySelectorAll('.visual-editor-hover, .visual-editor-selected').forEach((el) => {
-        el.classList.remove('visual-editor-hover', 'visual-editor-selected');
-      });
+      document
+        .querySelectorAll('.visual-editor-hover, .visual-editor-selected')
+        .forEach((el) => {
+          el.classList.remove('visual-editor-hover', 'visual-editor-selected');
+        });
     };
   };
 
@@ -128,7 +129,11 @@ export function VisualEditorPanel({
       <div data-visual-editor="panel">
         <Panel.Header
           title="Visual Editor"
-          description={state.isActive ? "Click on elements to select and edit their styles" : "Activate to start editing"}
+          description={
+            state.isActive
+              ? 'Click on elements to select and edit their styles'
+              : 'Activate to start editing'
+          }
         />
 
         {!state.isActive && (
